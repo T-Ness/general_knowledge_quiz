@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一般常識クイズ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F6F2;
+    --surface: #FFFFFF;
+    --border: #E2E0D8;
+    --text: #1A1A18;
+    --text-muted: #8A8880;
+    --accent: #2D5A3D;
+    --accent-light: #EAF2EC;
+    --accent2: #C4763A;
+    --accent2-light: #FEF3E8;
+    --correct: #2D5A3D;
+    --incorrect: #B94040;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .screen {
+    display: none;
+    width: 100%;
+    max-width: 480px;
+    animation: fadeUp 0.4s ease both;
+  }
+  .screen.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 36px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    background: var(--accent-light);
+    border-radius: 4px;
+    padding: 4px 10px;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+
+  .desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.8;
+    margin-bottom: 28px;
+  }
+
+  /* settings */
+  .setting-group {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+  }
+
+  .setting-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+
+  .setting-group select,
+  .setting-group input[type="number"] {
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.18s;
+  }
+
+  .setting-group select:focus,
+  .setting-group input[type="number"]:focus {
+    border-color: var(--accent);
+  }
+
+  .setting-group input[type="number"] {
+    width: 72px;
+    text-align: center;
+  }
+
+  .setting-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  /* last score */
+  .last-score {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    background: var(--accent-light);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  /* progress */
+  .q-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .q-progress-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .timer-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--accent);
+    transition: color 0.3s;
+  }
+
+  .timer-display.warning {
+    color: var(--incorrect);
+  }
+
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* question */
+  .q-text {
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.7;
+    margin-bottom: 12px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* result mark */
+  .result-mark {
+    font-size: 48px;
+    font-weight: 700;
+    text-align: center;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .result-mark.show { opacity: 1; }
+  .result-mark.correct { color: var(--correct); }
+  .result-mark.incorrect { color: var(--incorrect); }
+
+  /* choices */
+  .choices {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .choice-btn {
+    flex: 1;
+    height: 72px;
+    font-size: 28px;
+    font-weight: 700;
+    font-family: inherit;
+    background: transparent;
+    color: var(--accent);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+
+  .choice-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .choice-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* result screen */
+  .score-big {
+    font-family: 'DM Mono', monospace;
+    font-size: 64px;
+    font-weight: 500;
+    color: var(--accent);
+    text-align: center;
+    margin: 24px 0 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .score-label {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+  }
+
+  /* buttons */
+  .btn-primary {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s;
+    margin-top: 16px;
+  }
+
+  .btn-primary:hover { opacity: 0.88; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- START -->
+<div class="screen active" id="screen-start">
+  <div class="card">
+    <div class="badge">GENERAL KNOWLEDGE QUIZ</div>
+    <h1>一般常識クイズ</h1>
+    <p class="desc">全10問の○✕クイズに挑戦しよう！</p>
+    <div class="last-score" id="last-score"></div>
+    <div class="setting-group">
+      <div class="setting-label">問題の順番</div>
+      <select id="question-mode">
+        <option value="fixed">固定</option>
+        <option value="random">ランダム</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <div class="setting-label">1問あたりの制限時間</div>
+      <div class="setting-inline">
+        <input type="number" id="time-setting" min="1" max="10" value="5">
+        <span>秒</span>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="startQuiz()">スタート</button>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="screen" id="screen-quiz">
+  <div class="q-header">
+    <span class="q-progress-label" id="question-number">第1問</span>
+    <span class="timer-display" id="timer-display">5</span>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+  <div class="card">
+    <div class="result-mark" id="result-mark"></div>
+    <div class="q-text" id="question-text"></div>
+    <div class="choices">
+      <button class="choice-btn" onclick="answer(true)" id="btn-true">◯</button>
+      <button class="choice-btn" onclick="answer(false)" id="btn-false">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="screen" id="screen-result">
+  <div class="card">
+    <div class="badge">RESULT</div>
+    <h1>クイズ終了！</h1>
+    <div class="score-big" id="score-display">0 / 10</div>
+    <div class="score-label">正解数</div>
+    <button class="btn-primary" onclick="restart()">もう一度挑戦する</button>
+  </div>
+</div>
+
+<script>
+  const fixedQuestions = [
+    { text: "日本で一番高い山は富士山である。", isCorrect: true },
+    { text: "1年は365日または366日である。", isCorrect: true },
+    { text: "トマトは「野菜」ではなく植物学的には「果物」に分類されることが多い。", isCorrect: true },
+    { text: "信号機の「進め」の色は、法令上「緑」ではなく「青」である。", isCorrect: true },
+    { text: "パンダの主食は肉である。", isCorrect: false },
+    { text: "クジラは魚類である。", isCorrect: false },
+    { text: "氷は水に沈む。", isCorrect: false },
+    { text: "アメリカの首都はニューヨークである。", isCorrect: false },
+    { text: "「義務教育」には高校も含まれる。", isCorrect: false },
+    { text: "オリンピックは通常4年に1度開催される。", isCorrect: true }
+  ];
+
+  const allQuestions = [
+    { text: "日本で一番高い山は富士山である。", isCorrect: true },
+    { text: "1年は365日または366日である。", isCorrect: true },
+    { text: "トマトは植物学的には「果物」に分類されることが多い。", isCorrect: true },
+    { text: "信号機の「進め」の色は、法令上「青」である。", isCorrect: true },
+    { text: "パンダの主食は肉である。", isCorrect: false },
+    { text: "現在の日本の千円札の肖像画は野口英世である。", isCorrect: true },
+    { text: "氷は水に沈む。", isCorrect: false },
+    { text: "アメリカの首都はニューヨークである。", isCorrect: false },
+    { text: "「義務教育」には高校も含まれる。", isCorrect: false },
+    { text: "オリンピックは通常4年に1度開催される。", isCorrect: true },
+    { text: "地球は太陽の周りを回っている。", isCorrect: true },
+    { text: "クジラは魚類である。", isCorrect: false },
+    { text: "日本の国旗の色は赤と白である。", isCorrect: true },
+    { text: "1時間は60分である。", isCorrect: true },
+    { text: "北海道は日本で一番面積が大きい都道府県である。", isCorrect: true },
+    { text: "ペンギンは飛ぶことができる。", isCorrect: false },
+    { text: "富士山は活火山である。", isCorrect: true },
+    { text: "イルカは哺乳類である。", isCorrect: true },
+    { text: "日本の通貨単位は「円」である。", isCorrect: true },
+    { text: "水の化学式はH2Oである。", isCorrect: true },
+    { text: "ダイヤモンドは炭素でできている。", isCorrect: true },
+    { text: "光は音よりも速い。", isCorrect: true },
+    { text: "東京タワーの高さは333メートルである。", isCorrect: true },
+    { text: "日本の都道府県の数は47である。", isCorrect: true },
+    { text: "コアラの主食は竹である。", isCorrect: false },
+    { text: "人間の体温は平均約36～37度である。", isCorrect: true },
+    { text: "太陽は惑星である。", isCorrect: false },
+    { text: "砂糖は水に溶ける。", isCorrect: true },
+    { text: "コウモリは鳥類である。", isCorrect: false },
+    { text: "日本で一番長い川は信濃川である。", isCorrect: true },
+    { text: "月は自ら光を発している。", isCorrect: false },
+    { text: "ピラミッドはエジプトにある。", isCorrect: true },
+    { text: "虹は7色である。", isCorrect: true },
+    { text: "カンガルーはオーストラリアに生息している。", isCorrect: true },
+    { text: "赤道は北半球にある。", isCorrect: false },
+    { text: "日本の国花は桜である。", isCorrect: true },
+    { text: "鉛筆の芯は鉛でできている。", isCorrect: false },
+    { text: "人間の骨の数は約200本である。", isCorrect: true },
+    { text: "富士山は山梨県と静岡県にまたがっている。", isCorrect: true },
+    { text: "キリンの首の骨は人間より多い。", isCorrect: false },
+    { text: "日本で一番人口が多い都道府県は東京都である。", isCorrect: true },
+    { text: "ガラスは液体である。", isCorrect: false },
+    { text: "北極にペンギンは生息している。", isCorrect: false },
+    { text: "日本の最西端は沖縄県にある。", isCorrect: false },
+    { text: "金魚は淡水魚である。", isCorrect: true },
+    { text: "人間の心臓は右側にある。", isCorrect: false },
+    { text: "富士山は静岡県にのみ属している。", isCorrect: false },
+    { text: "地球は丸い。", isCorrect: true },
+    { text: "蝶と蛾は同じ昆虫である。", isCorrect: true },
+    { text: "日本の面積は世界で10番目に大きい。", isCorrect: false }
+  ];
+
+  let selectedQuestions = [];
+  let currentQuestionIndex = 0;
+  let score = 0;
+  let timeLimit = 5;
+  let timerInterval;
+  let answeredFlag = false;
+
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById(id);
+    el.classList.add('active');
+    void el.offsetWidth;
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const lastScore = localStorage.getItem('lastScore');
+    if (lastScore !== null) {
+      const el = document.getElementById('last-score');
+      el.textContent = `前回の正解数：${lastScore} / 10`;
+      el.style.display = 'block';
+    }
+  });
+
+  function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+
+  function startQuiz() {
+    const inputTime = parseInt(document.getElementById('time-setting').value);
+    if (inputTime < 1 || inputTime > 10) {
+      alert('時間は1〜10秒の間で設定してください');
+      return;
+    }
+    timeLimit = inputTime;
+
+    const mode = document.getElementById('question-mode').value;
+    selectedQuestions = mode === 'fixed'
+      ? [...fixedQuestions]
+      : shuffleArray(allQuestions).slice(0, 10);
+
+    currentQuestionIndex = 0;
+    score = 0;
+    show('screen-quiz');
+    showQuestion();
+  }
+
+  function showQuestion() {
+    if (currentQuestionIndex >= selectedQuestions.length) {
+      endQuiz();
+      return;
+    }
+
+    answeredFlag = false;
+    document.getElementById('btn-true').disabled = false;
+    document.getElementById('btn-false').disabled = false;
+
+    const mark = document.getElementById('result-mark');
+    mark.className = 'result-mark';
+    mark.textContent = '';
+
+    const q = selectedQuestions[currentQuestionIndex];
+    const progress = (currentQuestionIndex / selectedQuestions.length) * 100;
+
+    document.getElementById('progress-fill').style.width = progress + '%';
+    document.getElementById('question-number').textContent = `第${currentQuestionIndex + 1}問`;
+    document.getElementById('question-text').textContent = q.text;
+
+    let currentTime = timeLimit;
+    const timerDisplay = document.getElementById('timer-display');
+    timerDisplay.textContent = currentTime;
+    timerDisplay.classList.remove('warning');
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      currentTime--;
+      timerDisplay.textContent = currentTime;
+      if (currentTime <= 2) timerDisplay.classList.add('warning');
+      if (currentTime <= 0) {
+        clearInterval(timerInterval);
+        if (!answeredFlag) answer(null);
+      }
+    }, 1000);
+  }
+
+  function answer(userChoice) {
+    if (answeredFlag) return;
+    answeredFlag = true;
+    clearInterval(timerInterval);
+
+    document.getElementById('btn-true').disabled = true;
+    document.getElementById('btn-false').disabled = true;
+
+    const currentQ = selectedQuestions[currentQuestionIndex];
+    const isCorrect = userChoice === currentQ.isCorrect;
+    const mark = document.getElementById('result-mark');
+
+    if (isCorrect) {
+      score++;
+      mark.textContent = '◯';
+      mark.className = 'result-mark correct show';
+    } else {
+      mark.textContent = '✕';
+      mark.className = 'result-mark incorrect show';
+    }
+
+    setTimeout(() => {
+      currentQuestionIndex++;
+      showQuestion();
+    }, 500);
+  }
+
+  function endQuiz() {
+    localStorage.setItem('lastScore', score);
+    document.getElementById('score-display').textContent = `${score} / 10`;
+    show('screen-result');
+  }
+
+  function restart() {
+    show('screen-start');
+  }
+</script>
+</body>
+</html>
