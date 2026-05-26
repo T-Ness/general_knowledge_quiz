@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一般常識クイズ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0c0e;
+    --surface: #16161a;
+    --surface-2: #1d1d22;
+    --text: #ececec;
+    --muted: #87878d;
+    --border: #2a2a30;
+    --accent: #d4a85a;
+    --correct: #6cc486;
+    --wrong: #e25c5c;
+    --serif: "Noto Serif JP", "Hiragino Mincho ProN", "YuMincho", serif;
+    --sans: "Inter", "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 20px 64px;
+    font-feature-settings: "palt";
+  }
+
+  .app { width: 100%; max-width: 600px; }
+
+  .screen { display: none; }
+  .screen.active { display: block; animation: fade 0.35s ease; }
+
+  @keyframes fade {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- Start ---------- */
+  .start { text-align: center; padding: 32px 0 24px; }
+  .brand {
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    color: var(--muted);
+    margin-bottom: 40px;
+    text-transform: uppercase;
+  }
+  .title {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: clamp(40px, 9vw, 60px);
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    margin-bottom: 16px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 56px;
+    letter-spacing: 0.05em;
+  }
+  .mode-label {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .mode-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .mode-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 30px 16px;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 36px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.02em;
+  }
+  .mode-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .mode-btn .unit {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--muted);
+    display: block;
+    margin-top: 4px;
+    letter-spacing: 0.15em;
+  }
+  .mode-btn:hover .unit { color: var(--accent); }
+
+  /* ---------- Quiz ---------- */
+  .q-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .q-progress { font-variant-numeric: tabular-nums; }
+  .q-progress .current { color: var(--text); font-weight: 700; }
+  .q-genre { color: var(--accent); letter-spacing: 0.15em; }
+
+  .timer-bar {
+    height: 3px;
+    background: var(--surface);
+    margin-bottom: 40px;
+    overflow: hidden;
+  }
+  .timer-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 100%;
+    transform-origin: left;
+  }
+  .timer-fill.danger { background: var(--wrong); }
+
+  .question {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(22px, 4.5vw, 28px);
+    line-height: 1.55;
+    margin-bottom: 32px;
+    letter-spacing: 0.015em;
+  }
+
+  .choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .choice {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 32px 20px;
+    text-align: center;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 20px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    width: 100%;
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+  }
+  .choice:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--surface-2);
+    color: var(--accent);
+  }
+  .choice:disabled { cursor: default; }
+  .choice.correct {
+    background: rgba(108, 196, 134, 0.12);
+    border-color: var(--correct);
+    color: var(--correct);
+  }
+  .choice.wrong {
+    background: rgba(226, 92, 92, 0.12);
+    border-color: var(--wrong);
+    color: var(--wrong);
+  }
+
+  /* ---------- Result ---------- */
+  .result-header { text-align: center; padding: 60px 0 40px; }
+  .result-label {
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    color: var(--muted);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+  .score {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: clamp(60px, 14vw, 96px);
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+  .score .total {
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 0.6em;
+    margin-left: 4px;
+  }
+  .score-comment {
+    color: var(--muted);
+    margin-top: 12px;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+  }
+  .result-mode {
+    margin-top: 16px;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+  }
+
+  .restart {
+    width: 100%;
+    margin-top: 32px;
+    padding: 20px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .restart:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Start -->
+  <section id="screen-start" class="screen active start">
+    <div class="brand">NESS-KRAFT · QUIZ</div>
+    <h1 class="title">一般常識<br>10問</h1>
+    <p class="subtitle">4択 / 即時判定 / 時間内に回答</p>
+    <div class="mode-label">制限時間を選択</div>
+    <div class="mode-buttons">
+      <button class="mode-btn" id="btn-5">5<span class="unit">秒</span></button>
+      <button class="mode-btn" id="btn-1">1<span class="unit">秒</span></button>
+    </div>
+  </section>
+
+  <!-- Quiz -->
+  <section id="screen-quiz" class="screen">
+    <div class="q-header">
+      <div class="q-progress"><span class="current" id="q-current">01</span> / 10</div>
+      <div class="q-genre" id="q-genre"></div>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+    <h2 class="question" id="q-text"></h2>
+    <div class="choices" id="q-choices"></div>
+  </section>
+
+  <!-- Result -->
+  <section id="screen-result" class="screen">
+    <div class="result-header">
+      <div class="result-label">RESULT</div>
+      <div class="score" id="result-score"></div>
+      <div class="score-comment" id="result-comment"></div>
+      <div class="result-mode" id="result-mode"></div>
+    </div>
+    <button class="restart" id="btn-restart">もう一度</button>
+  </section>
+
+</div>
+
+<script>
+const QUESTIONS = [
+  { genre: '歴史', q: '江戸幕府を開いたのは誰？', choices: ['徳川家康', '織田信長'], a: 0 },
+  { genre: '歴史', q: '日本国憲法が施行されたのは何年？', choices: ['1946年', '1947年'], a: 1 },
+  { genre: '地理', q: '世界で最も流域面積が大きい川は？', choices: ['ナイル川', 'アマゾン川'], a: 1 },
+  { genre: '地理', q: '日本で最も面積が大きい都道府県は？', choices: ['北海道', '岩手県'], a: 0 },
+  { genre: '科学', q: '光の速さは秒速およそ何km？', choices: ['約3万km', '約30万km'], a: 1 },
+  { genre: '科学', q: '元素記号「Au」が表す金属は？', choices: ['金', '銀'], a: 0 },
+  { genre: '文学', q: '『吾輩は猫である』の作者は？', choices: ['夏目漱石', '森鷗外'], a: 0 },
+  { genre: '芸術', q: '『モナ・リザ』を描いたのは？', choices: ['ミケランジェロ', 'レオナルド・ダ・ヴィンチ'], a: 1 },
+  { genre: '社会', q: '日本の国会は何院制？', choices: ['一院制', '二院制'], a: 1 },
+  { genre: 'スポーツ', q: '夏季オリンピックは何年ごとに開催される？', choices: ['2年', '4年'], a: 1 }
+];
+
+const state = {
+  mode: null,      // 5 or 1 (sec)
+  feedback: null,  // 1000 or 500 (ms)
+  index: 0,
+  score: 0,
+  answers: [],     // -1 means timeout
+  timeoutId: null,
+  locked: false
+};
+
+const $ = sel => document.querySelector(sel);
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(`#screen-${name}`).classList.add('active');
+}
+
+function startQuiz(mode) {
+  state.mode = mode;
+  state.feedback = mode === 5 ? 1000 : 500;
+  state.index = 0;
+  state.score = 0;
+  state.answers = [];
+  showScreen('quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  state.locked = false;
+  const q = QUESTIONS[state.index];
+  $('#q-current').textContent = String(state.index + 1).padStart(2, '0');
+  $('#q-genre').textContent = q.genre;
+  $('#q-text').textContent = q.q;
+
+  const choicesEl = $('#q-choices');
+  choicesEl.innerHTML = '';
+  q.choices.forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.textContent = c;
+    btn.addEventListener('click', () => handleAnswer(i));
+    choicesEl.appendChild(btn);
+  });
+
+  startTimer();
+}
+
+function startTimer() {
+  const fill = $('#timer-fill');
+  fill.classList.remove('danger');
+  fill.style.transition = 'none';
+  fill.style.transform = 'scaleX(1)';
+  void fill.offsetWidth; // force reflow
+  fill.style.transition = `transform ${state.mode}s linear`;
+  fill.style.transform = 'scaleX(0)';
+
+  state.timeoutId = setTimeout(() => handleAnswer(-1), state.mode * 1000);
+}
+
+function freezeTimer() {
+  const fill = $('#timer-fill');
+  const t = getComputedStyle(fill).transform;
+  fill.style.transition = 'none';
+  fill.style.transform = t;
+}
+
+function handleAnswer(choiceIdx) {
+  if (state.locked) return;
+  state.locked = true;
+
+  clearTimeout(state.timeoutId);
+  state.timeoutId = null;
+
+  const q = QUESTIONS[state.index];
+  const isCorrect = choiceIdx === q.a;
+  state.answers.push(choiceIdx);
+  if (isCorrect) state.score++;
+
+  freezeTimer();
+  if (!isCorrect) $('#timer-fill').classList.add('danger');
+
+  const btns = $('#q-choices').querySelectorAll('.choice');
+  btns.forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.a) b.classList.add('correct');
+    else if (i === choiceIdx) b.classList.add('wrong');
+  });
+
+  setTimeout(() => {
+    state.index++;
+    if (state.index >= QUESTIONS.length) showResult();
+    else renderQuestion();
+  }, state.feedback);
+}
+
+function showResult() {
+  $('#result-score').innerHTML = `${state.score}<span class="total">/10</span>`;
+
+  const comments = {
+    10: '完璧', 9: 'お見事', 8: '上々',
+    7: '及第点', 6: '及第点',
+    5: 'もう一歩', 4: 'もう一歩',
+    3: '次に期待', 2: '次に期待', 1: '次に期待', 0: '次に期待'
+  };
+  $('#result-comment').textContent = comments[state.score];
+  $('#result-mode').textContent = `${state.mode}秒モード`;
+
+  showScreen('result');
+}
+
+// keyboard shortcuts (1/2, A/B, ←/→) for quiz screen
+document.addEventListener('keydown', (e) => {
+  if (!$('#screen-quiz').classList.contains('active')) return;
+  const map = { '1':0, '2':1, 'a':0, 'b':1, 'arrowleft':0, 'arrowright':1 };
+  const k = e.key.toLowerCase();
+  if (k in map) handleAnswer(map[k]);
+});
+
+$('#btn-5').addEventListener('click', () => startQuiz(5));
+$('#btn-1').addEventListener('click', () => startQuiz(1));
+$('#btn-restart').addEventListener('click', () => showScreen('start'));
+</script>
+</body>
+</html>
